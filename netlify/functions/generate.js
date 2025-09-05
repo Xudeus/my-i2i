@@ -1,18 +1,28 @@
 import fetch from "node-fetch";
 
 // netlify/functions/generate.js
+// netlify/functions/generate.js
 export async function handler(event) {
+  // Only allow POST
   if (event.httpMethod !== "POST") {
     return {
       statusCode: 405,
-      body: JSON.stringify({ error: "Method Not Allowed" })
+      headers: { "Allow": "POST" },
+      body: JSON.stringify({ error: "Method Not Allowed. Use POST." })
     };
   }
 
   try {
-    const { prompt, image } = JSON.parse(event.body);
+    const { prompt, image } = JSON.parse(event.body || "{}");
 
-    // Pollinations Kontext endpoint (expects image URL, not base64)
+    if (!prompt || !image) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Missing prompt or image" })
+      };
+    }
+
+    // Pollinations expects image URL, not base64
     const apiURL = `https://image.pollinations.ai/prompt/${encodeURIComponent(
       prompt
     )}?model=kontext&image=${encodeURIComponent(image)}`;
@@ -45,6 +55,8 @@ export async function handler(event) {
     };
   }
 }
+
+
 
 
 
