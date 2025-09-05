@@ -1,7 +1,7 @@
 import fetch from "node-fetch";
 
 export async function handler(event) {
-  if (event.httpMethod !== "POST") {
+  if (event.httpMethod !== "GET") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
@@ -26,7 +26,7 @@ export async function handler(event) {
         formData.append("image", fileStream);
 
         const response = await fetch(apiURL, {
-          method: "POST",
+          method: "GET",
           headers: {
             "Authorization": `Bearer ${process.env.POLLINATIONS_TOKEN}`
           },
@@ -49,3 +49,4 @@ export async function handler(event) {
     });
   });
 }
+
