@@ -102,7 +102,7 @@
 
         try {
           const response = await fetch("/.netlify/functions/generate", {
-            method: "POST",
+            method: "GET",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ prompt, image: base64Image })
           });
@@ -145,3 +145,4 @@
   </script>
 </body>
 </html>
+
