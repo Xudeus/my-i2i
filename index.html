@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Kontext Image-to-Image Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: #f0f2f5;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    header {
+      background: #4CAF50;
+      color: white;
+      text-align: center;
+      padding: 15px;
+      font-size: 1.4rem;
+      font-weight: bold;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      padding: 15px;
+    }
+    .input-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    input[type="file"], input[type="text"], button {
+      padding: 12px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    input[type="text"] {
+      width: 100%;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    .output-section {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .output-section img {
+      max-width: 100%;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .download-btn {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 12px 20px;
+      background: #2196F3;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+    .feed {
+      margin-top: 30px;
+    }
+    .feed h2 {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+    }
+    .feed-images {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 10px;
+    }
+    .feed-images img {
+      width: 100%;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+    @media (max-width: 600px) {
+      header {
+        font-size: 1.2rem;
+        padding: 10px;
+      }
+      .container {
+        padding: 10px;
+      }
+      input[type="file"], input[type="text"], button {
+        font-size: 0.95rem;
+        padding: 10px;
+      }
+      .download-btn {
+        padding: 10px 16px;
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>Kontext Image-to-Image Generator</header>
+  <div class="container">
+    <div class="input-section">
+      <input type="file" id="upload" accept="image/*">
+      <input type="text" id="prompt" placeholder="Enter your edit description...">
+      <button onclick="generateImage()">Generate Image</button>
+    </div>
+    <div class="output-section" id="output"></div>
+    <div class="feed">
+      <h2>?? Live Image Feed (updates every 1 min)</h2>
+      <div class="feed-images" id="feed"></div>
+    </div>
+  </div>
+
+  <script>
+    // -------- Image Generation ----------
+    async function generateImage() {
+      const fileInput = document.getElementById("upload");
+      const prompt = document.getElementById("prompt").value;
+      const output = document.getElementById("output");
+      
+      if (!fileInput.files.length || !prompt) {
+        alert("Please upload an image and enter a prompt!");
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const formData = new FormData();
+      formData.append("image", file);
+      formData.append("prompt", prompt);
+
+      output.innerHTML = "<p>? Generating...</p>";
+
+      try {
+        const response = await fetch("/.netlify/functions/generate", {
+          method: "POST",
+          body: formData
+        });
+
+        if (!response.ok) throw new Error("API request failed: " + response.status);
+
+        const blob = await response.blob();
+        const imgURL = URL.createObjectURL(blob);
+
+        output.innerHTML = `
+          <img src="${imgURL}" alt="Generated Image">
+          <a class="download-btn" href="${imgURL}" download="generated.png">Download</a>
+        `;
+      } catch (error) {
+        output.innerHTML = "<p style='color:red'>?? Error generating image</p>";
+        console.error(error);
+      }
+    }
+
+    // -------- Live Feed (Refresh every 1 min) ----------
+    async function loadFeed() {
+      const feedContainer = document.getElementById("feed");
+      feedContainer.innerHTML = "<p>Loading latest images...</p>";
+
+      try {
+        const response = await fetch("/.netlify/functions/feed");
+        const data = await response.json();
+
+        feedContainer.innerHTML = "";
+        data.slice(0, 12).forEach(url => {
+          const img = document.createElement("img");
+          img.src = url;
+          feedContainer.appendChild(img);
+        });
+      } catch (err) {
+        feedContainer.innerHTML = "<p style='color:red'>?? Error loading feed</p>";
+        console.error(err);
+      }
+    }
+
+    loadFeed();
+    setInterval(loadFeed, 60000);
+  </script>
+</body>
+</html>
